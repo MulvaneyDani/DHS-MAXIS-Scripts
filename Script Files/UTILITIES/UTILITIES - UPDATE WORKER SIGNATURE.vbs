@@ -1,5 +1,5 @@
-'STATS GATHERING----------------------------------------------------------------------------------------------------
-name_of_script = "UTILITIES - MAIN MENU.vbs"
+'STATS GATHERING--------------------------------------------------------------------------------------------------------------
+name_of_script = "UTILITIES - UPDATE WORKER SIGNATURE.vbs"
 start_time = timer
 
 'LOADING FUNCTIONS LIBRARY FROM GITHUB REPOSITORY===========================================================================
@@ -43,37 +43,31 @@ IF IsEmpty(FuncLib_URL) = TRUE THEN	'Shouldn't load FuncLib if it already loaded
 	END IF
 END IF
 'END FUNCTIONS LIBRARY BLOCK================================================================================================
-'DIALOGS----------------------------------------------------------------------------------------------------
-BeginDialog UTILITIES_scripts_main_menu_dialog, 0, 0, 461, 85, "Utilities scripts main menu dialog"
+
+'----------DIALOGS----------
+BeginDialog update_worker_signature_dialog, 0, 0, 191, 105, "Update Worker Signature"
+  EditBox 10, 60, 175, 15, worker_signature
   ButtonGroup ButtonPressed
-    CancelButton 405, 65, 50, 15
-    PushButton 5, 20, 95, 10, "Banked Month DB Updater", banked_month_database_updater_button
-    PushButton 60, 35, 40, 10, "INFO", INFO_button
-    PushButton 5, 50, 95, 10, "Update Worker Signature", UPDATE_WORKER_SIGNATURE_button
-    PushButton 385, 5, 70, 10, "SIR instructions", SIR_instructions_button
-  Text 5, 5, 250, 10, "Utilities scripts main menu: select the script to run from the choices below."
-  Text 105, 20, 305, 10, "-- NEW 02/2016!!! Updates cases in the banked month database with actual MAXIS status."
-  Text 105, 35, 265, 10, "-- NEW 01/2016!!! Displays information about your BlueZone Scripts installation."
-  Text 105, 50, 195, 10, "-- Sets or updates the default worker signature for this user."
+    OkButton 45, 85, 50, 15
+    CancelButton 95, 85, 50, 15
+  Text 10, 10, 175, 10, "Enter what you would like for your default signature."
+  Text 10, 25, 170, 25, "NOTE: This will be pre-loaded in every script. Once the script has started, you can still modify your signature in the appropriate editbox."
 EndDialog
 
-'Variables to declare
-IF script_repository = "" THEN script_repository = "https://raw.githubusercontent.com/MN-Script-Team/DHS-MAXIS-Scripts/master/Script Files"		'If it's blank, we're assuming the user is a scriptwriter, ergo, master branch.
+'----------THE SCRIPT----------
+dialog update_worker_signature_dialog				'Shows the dialog
+IF ButtonPressed = cancel THEN stopscript			'Handling for if cancel is pressed
+IF worker_signature = "" THEN stopscript			'If they enter nothing, it exits
 
-'THE SCRIPT----------------------------------------------------------------------------------------------------
-'Shows dialog, which asks user which script to run.
-Do
-	dialog UTILITIES_scripts_main_menu_dialog
-	If buttonpressed = cancel then stopscript
-	If buttonpressed = SIR_instructions_button then CreateObject("WScript.Shell").Run("https://www.dhssir.cty.dhs.state.mn.us/MAXIS/blzn/Script%20Instructions%20Wiki/Utilities%20scripts.aspx")
-Loop until buttonpressed <> SIR_instructions_button
+'This creates an object which collects the username from the Windows logon. We need this to determine the correct location for the My Documents folder.
+Set objNet = CreateObject("WScript.NetWork")
+windows_user_ID = objNet.UserName		'Saves the .UserName object as a new variable, windows_user_ID
 
-'Connecting to BlueZone
-EMConnect ""
+'Opens an FSO, opens workersig.txt, writes the new signature in, and exits
+SET update_worker_sig_fso = CreateObject("Scripting.FileSystemObject")
+SET update_worker_sig_command = update_worker_sig_fso.CreateTextFile("C:\USERS\" & windows_user_ID & "\MY DOCUMENTS\workersig.txt", 2)
+update_worker_sig_command.Write(worker_signature)
+update_worker_sig_command.Close
 
-IF buttonpressed = banked_month_database_updater_button 		then call run_from_GitHub(script_repository & "/UTILITIES/UTILITIES - BANKED MONTH DATABASE UPDATER.vbs")
-IF buttonpressed = INFO_button 									then call run_from_GitHub(script_repository & "/UTILITIES/UTILITIES - INFO.vbs")
-IF buttonpressed = UPDATE_WORKER_SIGNATURE_button				then call run_from_GitHub(script_repository & "/UTILITIES/UTILITIES - UPDATE WORKER SIGNATURE.vbs")
-
-'Logging usage stats
-script_end_procedure("If you see this, it's because you clicked a button that, for some reason, does not have an outcome in the script. Contact your alpha user to report this bug. Thank you!")
+'Script ends
+script_end_procedure("")
